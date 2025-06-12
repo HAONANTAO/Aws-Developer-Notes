@@ -9,14 +9,9 @@ jobs:
   sync:
     runs-on: ubuntu-latest
 
-    permissions:
-      contents: write    # 允许读写仓库内容权限，必须写，不然 push 会被拒绝
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
-        with:
-          persist-credentials: false   # 这里关闭默认 token，改用后面传入的 token 推送
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -34,10 +29,10 @@ jobs:
 
       - name: Commit & Push changes
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 这里要确保仓库 Secrets 里有 GITHUB_TOKEN
+          GITHUB_TOKEN: ${{ secrets.ForNotion }}
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
           git add .
-          git diff-index --quiet HEAD || git commit -m "Sync Notion notes $(date +'%Y-%m-%d %H:%M:%S')"
+          git commit -m "Sync Notion notes $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
           git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:main
