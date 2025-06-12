@@ -2,15 +2,15 @@ name: Notion Notes Sync
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # 每天 UTC 零点自动执行一次
-  workflow_dispatch:     # 手动触发
+    - cron: '0 0 * * *'   # 每天UTC零点运行一次
+  workflow_dispatch:       # 支持手动触发
 
 jobs:
   sync:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository
         uses: actions/checkout@v3
 
       - name: Setup Node.js
@@ -28,9 +28,14 @@ jobs:
         run: node scripts/notion-sync.js
 
       - name: Commit & Push changes
+        env:
+          GITHUB_TOKEN: ${{ secrets.FORNOTION }}
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+
           git add .
           git commit -m "Sync Notion notes $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
-          git push
+
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
+          git push origin main
