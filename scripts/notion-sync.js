@@ -2,45 +2,18 @@ import fs from 'fs';
 import { Client } from '@notionhq/client';
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
-let pageId = process.env.NOTION_PAGE_ID;
-
-if (!pageId) {
-  console.error('请设置环境变量 NOTION_PAGE_ID');
-  process.exit(1);
-}
-
-function normalizeId(id) {
-  return id.replace(/-/g, '');
-}
-
-pageId = normalizeId(pageId);
+const pageId = process.env.NOTION_PAGE_ID?.replace(/-/g, '');
 
 async function fetchAllBlocks(blockId) {
-  let blocks = [];
-  let cursor = undefined;
+  const response = await notion.blocks.children.list({
+    block_id: blockId,
+  });
+  
+  if (!response || !Array.isArray(response.results)) {
+    throw new Error('Notion API 返回结果中没有 results');
+  }
 
-  do {
-    const response = await notion.blocks.children.list({
-      block_id: blockId,
-      start_cursor: cursor,
-    });
-
-    if (!response || !Array.isArray(response.results)) {
-      throw new Error('Notion API 返回结果中没有 results');
-    }
-
-    for (const block of response.results) {
-      blocks.push(block);
-      if (block.has_children) {
-        const childBlocks = await fetchAllBlocks(block.id);
-        blocks = blocks.concat(childBlocks);
-      }
-    }
-
-    cursor = response.has_more ? response.next_cursor : undefined;
-  } while (cursor);
-
-  return blocks;
+  return response.results;
 }
 
 function extractTextFromBlocks(blocks) {
@@ -49,36 +22,14 @@ function extractTextFromBlocks(blocks) {
   for (const block of blocks) {
     if (!block || typeof block.type !== 'string') continue;
 
-    switch (block.type) {
-      case 'paragraph':
-        content += block.paragraph.text.map(t => t.plain_text).join('') + '\n\n';
-        break;
-      case 'heading_1':
-        content += '# ' + block.heading_1.text.map(t => t.plain_text).join('') + '\n\n';
-        break;
-      case 'heading_2':
-        content += '## ' + block.heading_2.text.map(t => t.plain_text).join('') + '\n\n';
-        break;
-      case 'heading_3':
-        content += '### ' + block.heading_3.text.map(t => t.plain_text).join('') + '\n\n';
-        break;
-      case 'toggle':
-        // toggle前面加>表示引用
-        content += '> ' + block.toggle.text.map(t => t.plain_text).join('') + '\n\n';
-        break;
-      case 'bulleted_list_item':
-        content += '- ' + block.bulleted_list_item.text.map(t => t.plain_text).join('') + '\n';
-        break;
-      case 'numbered_list_item':
-        content += '1. ' + block.numbered_list_item.text.map(t => t.plain_text).join('') + '\n';
-        break;
-      case 'code':
-        content += '```\n' + block.code.text.map(t => t.plain_text).join('') + '\n```\n\n';
-        break;
-      // 更多类型可继续加...
-      default:
-        // console.log('未处理的块类型:', block.type);
-        break;
+    if (block.type === 'paragraph' && block.paragraph?.text?.length > 0) {
+      content += block.paragraph.text.map(t => t.plain_text).join('') + '\n\n';
+    } else if (block.type === 'heading_1' && block.heading_1?.text?.length > 0) {
+      content += '# ' + block.heading_1.text.map(t => t.plain_text).join('') + '\n\n';
+    } else if (block.type === 'heading_2' && block.heading_2?.text?.length > 0) {
+      content += '## ' + block.heading_2.text.map(t => t.plain_text).join('') + '\n\n';
+    } else if (block.type === 'heading_3' && block.heading_3?.text?.length > 0) {
+      content += '### ' + block.heading_3.text.map(t => t.plain_text).join('') + '\n\n';
     }
   }
 
@@ -86,8 +37,8 @@ function extractTextFromBlocks(blocks) {
 }
 
 async function main() {
-  if (!process.env.NOTION_TOKEN) {
-    console.error('请确保设置了环境变量 NOTION_TOKEN');
+  if (!pageId || !process.env.NOTION_TOKEN) {
+    console.error('请确保设置了 NOTION_TOKEN 和 NOTION_PAGE_ID 环境变量');
     process.exit(1);
   }
 
