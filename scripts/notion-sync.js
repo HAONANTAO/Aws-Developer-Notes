@@ -26,23 +26,26 @@ function extractTextFromBlocks(blocks) {
   let content = '';
 
   for (const block of blocks) {
-    // 这里只简单处理段落，其他类型可以自己扩展
-    if (block.type === 'paragraph' && block.paragraph.text.length > 0) {
-      content += block.paragraph.text.map(t => t.plain_text).join('') + '\n\n';
+    if (!block || typeof block.type !== 'string') {
+      // 跳过无效block
+      continue;
     }
-    // 如果是 heading 等可继续扩展
-    else if (block.type === 'heading_1') {
+
+    if (block.type === 'paragraph' && block.paragraph?.text?.length > 0) {
+      content += block.paragraph.text.map(t => t.plain_text).join('') + '\n\n';
+    } else if (block.type === 'heading_1' && block.heading_1?.text?.length > 0) {
       content += '# ' + block.heading_1.text.map(t => t.plain_text).join('') + '\n\n';
-    } else if (block.type === 'heading_2') {
+    } else if (block.type === 'heading_2' && block.heading_2?.text?.length > 0) {
       content += '## ' + block.heading_2.text.map(t => t.plain_text).join('') + '\n\n';
-    } else if (block.type === 'heading_3') {
+    } else if (block.type === 'heading_3' && block.heading_3?.text?.length > 0) {
       content += '### ' + block.heading_3.text.map(t => t.plain_text).join('') + '\n\n';
     }
-    // 还可以加列表、代码块等
+    // 可继续支持更多类型
   }
 
   return content;
 }
+
 
 async function main() {
   if (!pageId || !process.env.NOTION_TOKEN) {
