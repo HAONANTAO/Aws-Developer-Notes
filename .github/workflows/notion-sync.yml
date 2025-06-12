@@ -8,23 +8,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout repository (no persist credentials)
         uses: actions/checkout@v3
+        with:
+          persist-credentials: false  # 禁用默认 token（关键！）
 
       - name: Make dummy change
-        run: echo "test push $(date)" >> test_push.md
+        run: echo "Test push on $(date)" >> test_push.md
 
-      - name: Commit the change
+      - name: Commit change
         run: |
           git config user.name "HAONANTAO"
-          git config user.email "your@email.com"
+          git config user.email "haonantao@example.com"
           git add test_push.md
-          git commit -m "Test push from workflow" || echo "Nothing to commit"
+          git commit -m "Test push commit" || echo "Nothing to commit"
 
-      - name: Push to main using PAT
+      - name: Push change using PAT
         env:
-          TOKEN: ${{ secrets.NOTIONSECRET }}
+          PAT: ${{ secrets.NOTIONSECRET }}
         run: |
-          git remote set-url origin https://x-access-token:${TOKEN}@github.com/${{ github.repository }}.git
+          git remote set-url origin https://x-access-token:${PAT}@github.com/${{ github.repository }}.git
           git push origin main
-        shell: bash
