@@ -29,7 +29,7 @@ jobs:
 
       - name: Commit & Push changes
         env:
-          GITHUB_TOKEN: ${{ secrets.FORNOTION }}
+          PAT_TOKEN: ${{ secrets.FORNOTION }}
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
@@ -37,5 +37,6 @@ jobs:
           git add .
           git commit -m "Sync Notion notes $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
 
-          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}
+          git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}
           git push origin main
+
