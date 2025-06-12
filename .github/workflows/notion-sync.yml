@@ -1,43 +1,29 @@
-name: Notion Notes Sync
+name: Test Git Push Permission
 
 on:
-  schedule:
-    - cron: '0 0 * * *'   # 每天 UTC 零点执行
-  workflow_dispatch:       # 支持手动触发
+  workflow_dispatch:  # 手动触发
 
 jobs:
-  sync:
+  test-push:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout repository
+      - name: Checkout code
         uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # 重要，拉取完整历史，否则 push 可能拒绝
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run Notion sync script
-        env:
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
-        run: node scripts/notion-sync.js
+      - name: Make a small change
+        run: |
+          echo "test push $(date)" >> test-push.txt
 
       - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Sync Notion notes $(date +'%Y-%m-%d %H:%M:%S')"
+          git add test-push.txt
+          git commit -m "Test push permission $(date)" || echo "No changes to commit"
 
       - name: Push changes
-        uses: ad-m/github-push-action@v0.6.0
-        with:
-          github_token: ${{ secrets.FORNOTION }}
-          branch: main
+        env:
+          GITHUB_TOKEN: ${{ secrets.FORNOTION }}
+        run: |
+          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+          git push origin main
