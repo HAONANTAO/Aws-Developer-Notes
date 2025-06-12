@@ -27,6 +27,8 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
+          GITHUB_TOKEN: ${{ github.token }}
+
         run: node scripts/notion-sync.js
 
       - name: Commit & Push changes
