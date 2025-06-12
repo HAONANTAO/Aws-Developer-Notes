@@ -2,7 +2,7 @@ name: Notion Notes Sync
 
 on:
   schedule:
-    - cron: '0 0 * * *'   # 每天 UTC 零点执行同步
+    - cron: '0 0 * * *'   # 每天 UTC 零点执行
   workflow_dispatch:       # 支持手动触发
 
 jobs:
@@ -13,9 +13,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # 拉取完整历史，方便后续 git push
+          fetch-depth: 0  # 重要，拉取完整历史，否则 push 可能拒绝
 
-      - name: Setup Node.js environment
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 18
@@ -29,15 +29,14 @@ jobs:
           NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
         run: node scripts/notion-sync.js
 
-      - name: Commit changes if any
+      - name: Commit changes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          # 只有有变化才提交
           git diff --cached --quiet || git commit -m "Sync Notion notes $(date +'%Y-%m-%d %H:%M:%S')"
 
-      - name: Push changes to repository
+      - name: Push changes
         uses: ad-m/github-push-action@v0.6.0
         with:
           github_token: ${{ secrets.FORNOTION }}
