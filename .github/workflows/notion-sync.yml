@@ -20,7 +20,7 @@ jobs:
           git commit -m "Test push from workflow" || echo "Nothing to commit"
 
       - name: Debug PAT token length
-        run: echo "PAT length: ${#PAT_TOKEN}"
+        run: echo "PAT length: ${#NOTIONSECRET}"
         env:
           PAT_TOKEN: ${{ secrets.NOTIONSECRET }}
 
