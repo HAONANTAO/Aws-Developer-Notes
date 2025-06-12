@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # 拉全历史，方便后续 push
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -27,15 +29,15 @@ jobs:
           NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
         run: node scripts/notion-sync.js
 
-      - name: Commit & Push changes
-        env:
-          PAT_TOKEN: ${{ secrets.FORNOTION }}
+      - name: Commit changes
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .
           git diff --cached --quiet || git commit -m "Sync Notion notes $(date +'%Y-%m-%d %H:%M:%S')"
 
-          git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git
-          git push origin main
+      - name: Push changes
+        uses: ad-m/github-push-action@v0.6.0
+        with:
+          github_token: ${{ secrets.FORNOTION }}
+          branch: main
