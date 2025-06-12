@@ -4,9 +4,8 @@ import { Client } from '@notionhq/client';
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const pageId = process.env.NOTION_PAGE_ID;
 
-// 递归拉取所有块，包括子块
-async function fetchBlocksRecursive(blockId) {
-  let allBlocks = [];
+async function fetchAllBlocks(blockId) {
+  let blocks = [];
   let cursor = undefined;
 
   do {
@@ -15,20 +14,22 @@ async function fetchBlocksRecursive(blockId) {
       start_cursor: cursor,
     });
 
-    for (const block of response.results) {
-      allBlocks.push(block);
+    if (!Array.isArray(response.results)) {
+      throw new Error('Notion API 返回结果中没有 results');
+    }
 
-      // 如果该块有子块，递归拉取
+    for (const block of response.results) {
+      blocks.push(block);
       if (block.has_children) {
-        const childBlocks = await fetchBlocksRecursive(block.id);
-        allBlocks = allBlocks.concat(childBlocks);
+        const childBlocks = await fetchAllBlocks(block.id);
+        blocks = blocks.concat(childBlocks);
       }
     }
 
     cursor = response.has_more ? response.next_cursor : undefined;
   } while (cursor);
 
-  return allBlocks;
+  return blocks;
 }
 
 function extractTextFromBlocks(blocks) {
@@ -37,16 +38,25 @@ function extractTextFromBlocks(blocks) {
   for (const block of blocks) {
     if (!block || typeof block.type !== 'string') continue;
 
-    if (block.type === 'paragraph' && block.paragraph?.text?.length > 0) {
-      content += block.paragraph.text.map(t => t.plain_text).join('') + '\n\n';
-    } else if (block.type === 'heading_1' && block.heading_1?.text?.length > 0) {
-      content += '# ' + block.heading_1.text.map(t => t.plain_text).join('') + '\n\n';
-    } else if (block.type === 'heading_2' && block.heading_2?.text?.length > 0) {
-      content += '## ' + block.heading_2.text.map(t => t.plain_text).join('') + '\n\n';
-    } else if (block.type === 'heading_3' && block.heading_3?.text?.length > 0) {
-      content += '### ' + block.heading_3.text.map(t => t.plain_text).join('') + '\n\n';
+    switch (block.type) {
+      case 'paragraph':
+        content += block.paragraph.text.map(t => t.plain_text).join('') + '\n\n';
+        break;
+      case 'heading_1':
+        content += '# ' + block.heading_1.text.map(t => t.plain_text).join('') + '\n\n';
+        break;
+      case 'heading_2':
+        content += '## ' + block.heading_2.text.map(t => t.plain_text).join('') + '\n\n';
+        break;
+      case 'heading_3':
+        content += '### ' + block.heading_3.text.map(t => t.plain_text).join('') + '\n\n';
+        break;
+      case 'toggle':
+        // toggle 的文本
+        content += '> ' + block.toggle.text.map(t => t.plain_text).join('') + '\n\n';
+        break;
+      // 你还可以根据需要继续支持列表、引用等类型
     }
-    // 这里可以继续支持更多类型，比如 bulleted_list_item, numbered_list_item 等
   }
 
   return content;
@@ -59,17 +69,11 @@ async function main() {
   }
 
   try {
-    const blocks = await fetchBlocksRecursive(pageId);
+    const blocks = await fetchAllBlocks(pageId);
     if (blocks.length === 0) {
       console.warn('⚠️ 页面没有可写入的文本内容');
     }
-
     const markdown = extractTextFromBlocks(blocks);
-
-    if (!markdown.trim()) {
-      console.warn('⚠️ 页面内容为空，未提取到文本');
-    }
-
     fs.writeFileSync('NOTION_SYNC.md', markdown, 'utf8');
     console.log('同步完成，内容已写入 NOTION_SYNC.md');
   } catch (err) {
