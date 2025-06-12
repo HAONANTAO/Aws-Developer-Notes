@@ -36,3 +36,4 @@ jobs:
           git add .
           git commit -m "Sync Notion notes $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
           git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:main
+
