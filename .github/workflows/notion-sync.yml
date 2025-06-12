@@ -1,29 +1,20 @@
 name: Test Git Push Permission
 
 on:
-  workflow_dispatch:  # 手动触发
+  workflow_dispatch:
 
 jobs:
   test-push:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-      - name: Make a small change
-        run: |
-          echo "test push $(date)" >> test-push.txt
-
-      - name: Commit changes
-        run: |
+      - run: |
+          echo "test push $(date)" >> test_push.md
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add test-push.txt
-          git commit -m "Test push permission $(date)" || echo "No changes to commit"
-
-      - name: Push changes
-        env:
-          GITHUB_TOKEN: ${{ secrets.FORNOTION }}
-        run: |
-          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+          git add test_push.md
+          git commit -m "Test push from workflow"
+          git remote set-url origin https://x-access-token:${{ secrets.FORNOTION }}@github.com/${{ github.repository }}.git
           git push origin main
