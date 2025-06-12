@@ -1,15 +1,19 @@
 name: Test Git Push Permission
 
 on:
-  workflow_dispatch: # 支持手动触发测试
+  workflow_dispatch:
 
 jobs:
   test-push:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v3
+      - uses: actions/checkout@v3
+
+      - name: Debug PAT token
+        run: echo "PAT length: ${#PAT_TOKEN}"
+        env:
+          PAT_TOKEN: ${{ secrets.NOTIONSECRET }}
 
       - name: Make a test commit
         run: |
@@ -21,7 +25,7 @@ jobs:
 
       - name: Push changes
         env:
-          GITHUB_TOKEN: ${{ secrets.NOTIONSECRET }}
+          PAT_TOKEN: ${{ secrets.NOTIONSECRET }}
         run: |
-          git remote set-url origin https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }}.git
+          git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}.git
           git push origin HEAD:main
