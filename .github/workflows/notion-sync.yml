@@ -1,29 +1,42 @@
-name: Test PAT Push
+name: Notion Notes Sync
 
 on:
-  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'   # 每天 UTC 零点执行
+  workflow_dispatch:       # 支持手动触发
 
 jobs:
-  test-push:
+  sync:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository (no persist credentials)
+      - name: Checkout repository (no GitHub bot credentials)
         uses: actions/checkout@v3
         with:
-          persist-credentials: false  # 禁用默认 token（关键！）
+          persist-credentials: false  # ❗️使用你自己的 PAT，禁用默认
 
-      - name: Make dummy change
-        run: echo "Test push on $(date)" >> test_push.md
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
 
-      - name: Commit change
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run Notion sync script
+        env:
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
+        run: node scripts/notion-sync.js
+
+      - name: Commit changes (if any)
         run: |
           git config user.name "HAONANTAO"
           git config user.email "haonantao@example.com"
-          git add test_push.md
-          git commit -m "Test push commit" || echo "Nothing to commit"
+          git add .
+          git diff --cached --quiet || git commit -m "Sync Notion notes $(date +'%Y-%m-%d %H:%M:%S')"
 
-      - name: Push change using PAT
+      - name: Push to GitHub using PAT
         env:
           PAT: ${{ secrets.NOTIONSECRET }}
         run: |
