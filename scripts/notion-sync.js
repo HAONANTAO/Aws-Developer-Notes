@@ -1,30 +1,65 @@
-// scripts/notion-sync.js
 import fs from 'fs';
 import { Client } from '@notionhq/client';
 
+// 从环境变量读取token和pageId
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const pageId = process.env.NOTION_PAGE_ID;
 
-async function fetchPage() {
-  try {
+async function fetchAllBlocks(blockId) {
+  let blocks = [];
+  let cursor = undefined;
+
+  do {
     const response = await notion.blocks.children.list({
-      block_id: pageId,
-      page_size: 100,
+      block_id: blockId,
+      start_cursor: cursor,
     });
 
-    let content = '';
-    response.results.forEach(block => {
-      if (block.type === 'paragraph') {
-        content += block.paragraph.text.map(t => t.plain_text).join('') + '\n';
-      }
-    });
+    blocks = blocks.concat(response.results);
+    cursor = response.has_more ? response.next_cursor : undefined;
+  } while (cursor);
 
-    fs.writeFileSync('NOTION_SYNC.md', content, 'utf8');
-    console.log('Notion content saved to NOTION_SYNC.md');
-  } catch (error) {
-    console.error('Fetch Notion page failed:', error);
+  return blocks;
+}
+
+function extractTextFromBlocks(blocks) {
+  let content = '';
+
+  for (const block of blocks) {
+    // 这里只简单处理段落，其他类型可以自己扩展
+    if (block.type === 'paragraph' && block.paragraph.text.length > 0) {
+      content += block.paragraph.text.map(t => t.plain_text).join('') + '\n\n';
+    }
+    // 如果是 heading 等可继续扩展
+    else if (block.type === 'heading_1') {
+      content += '# ' + block.heading_1.text.map(t => t.plain_text).join('') + '\n\n';
+    } else if (block.type === 'heading_2') {
+      content += '## ' + block.heading_2.text.map(t => t.plain_text).join('') + '\n\n';
+    } else if (block.type === 'heading_3') {
+      content += '### ' + block.heading_3.text.map(t => t.plain_text).join('') + '\n\n';
+    }
+    // 还可以加列表、代码块等
+  }
+
+  return content;
+}
+
+async function main() {
+  if (!pageId || !process.env.NOTION_TOKEN) {
+    console.error('请确保设置了 NOTION_TOKEN 和 NOTION_PAGE_ID 环境变量');
+    process.exit(1);
+  }
+
+  try {
+    const blocks = await fetchAllBlocks(pageId);
+    const markdown = extractTextFromBlocks(blocks);
+
+    fs.writeFileSync('NOTION_SYNC.md', markdown, 'utf8');
+    console.log('同步完成，内容已写入 NOTION_SYNC.md');
+  } catch (err) {
+    console.error('同步失败:', err);
     process.exit(1);
   }
 }
 
-fetchPage();
+main();
