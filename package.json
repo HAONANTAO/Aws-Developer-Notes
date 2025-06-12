@@ -6,6 +6,6 @@
     "sync": "node scripts/notion-sync.js"
   },
   "dependencies": {
-    "@notionhq/client": "^3.6.3"
+    "@notionhq/client": "^2.2.14"
   }
 }
