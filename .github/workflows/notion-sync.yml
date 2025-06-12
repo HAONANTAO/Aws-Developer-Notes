@@ -3,7 +3,7 @@ name: Notion Notes Sync
 on:
   schedule:
     - cron: '0 0 * * *'   # 每天UTC零点运行一次
-  workflow_dispatch:       # 支持手动触发
+  workflow_dispatch:
 
 jobs:
   sync:
@@ -27,16 +27,26 @@ jobs:
           NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
         run: node scripts/notion-sync.js
 
+      - name: Debug PAT token
+        env:
+          PAT_TOKEN: ${{ secrets.FORNOTION }}
+        run: echo "PAT_TOKEN prefix: ${PAT_TOKEN:0:6}****"
+
+      - name: Show git status
+        run: git status
+
+      - name: Show git remote -v
+        run: git remote -v
+
       - name: Commit & Push changes
         env:
           PAT_TOKEN: ${{ secrets.FORNOTION }}
         run: |
-          echo "PAT_TOKEN prefix: ${PAT_TOKEN:0:4}****"  # 只打印前4位，防止泄露
-
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
           git add .
           git commit -m "Sync Notion notes $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
 
-          git push https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }} HEAD:main
+          git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}
+          git push origin main
