@@ -1,0 +1,11 @@
+{
+  "name": "notion-sync",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "sync": "node scripts/notion-sync.js"
+  },
+  "dependencies": {
+    "@notionhq/client": "^3.7.0"
+  }
+}
