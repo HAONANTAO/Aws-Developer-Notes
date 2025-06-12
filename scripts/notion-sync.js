@@ -2,7 +2,18 @@ import fs from 'fs';
 import { Client } from '@notionhq/client';
 
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
-const pageId = process.env.NOTION_PAGE_ID;
+let pageId = process.env.NOTION_PAGE_ID;
+
+if (!pageId) {
+  console.error('请设置环境变量 NOTION_PAGE_ID');
+  process.exit(1);
+}
+
+function normalizeId(id) {
+  return id.replace(/-/g, '');
+}
+
+pageId = normalizeId(pageId);
 
 async function fetchAllBlocks(blockId) {
   let blocks = [];
@@ -14,7 +25,7 @@ async function fetchAllBlocks(blockId) {
       start_cursor: cursor,
     });
 
-    if (!Array.isArray(response.results)) {
+    if (!response || !Array.isArray(response.results)) {
       throw new Error('Notion API 返回结果中没有 results');
     }
 
@@ -52,10 +63,22 @@ function extractTextFromBlocks(blocks) {
         content += '### ' + block.heading_3.text.map(t => t.plain_text).join('') + '\n\n';
         break;
       case 'toggle':
-        // toggle 的文本
+        // toggle前面加>表示引用
         content += '> ' + block.toggle.text.map(t => t.plain_text).join('') + '\n\n';
         break;
-      // 你还可以根据需要继续支持列表、引用等类型
+      case 'bulleted_list_item':
+        content += '- ' + block.bulleted_list_item.text.map(t => t.plain_text).join('') + '\n';
+        break;
+      case 'numbered_list_item':
+        content += '1. ' + block.numbered_list_item.text.map(t => t.plain_text).join('') + '\n';
+        break;
+      case 'code':
+        content += '```\n' + block.code.text.map(t => t.plain_text).join('') + '\n```\n\n';
+        break;
+      // 更多类型可继续加...
+      default:
+        // console.log('未处理的块类型:', block.type);
+        break;
     }
   }
 
@@ -63,8 +86,8 @@ function extractTextFromBlocks(blocks) {
 }
 
 async function main() {
-  if (!pageId || !process.env.NOTION_TOKEN) {
-    console.error('请确保设置了 NOTION_TOKEN 和 NOTION_PAGE_ID 环境变量');
+  if (!process.env.NOTION_TOKEN) {
+    console.error('请确保设置了环境变量 NOTION_TOKEN');
     process.exit(1);
   }
 
