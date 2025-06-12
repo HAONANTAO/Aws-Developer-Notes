@@ -3,17 +3,20 @@ name: Notion Notes Sync
 on:
   schedule:
     - cron: '0 0 * * *'   # 每天 UTC 零点自动执行一次
-  workflow_dispatch:     # 手动触发
+  workflow_dispatch:     # 允许手动触发
 
 jobs:
   sync:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: write    # 允许读写仓库内容权限，必须写，不然 push 会被拒绝
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v3
         with:
-          persist-credentials: false   # 禁止默认凭证，手动推送时用token
+          persist-credentials: false   # 这里关闭默认 token，改用后面传入的 token 推送
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -27,16 +30,14 @@ jobs:
         env:
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
-          GITHUB_TOKEN: ${{ github.token }}
-
         run: node scripts/notion-sync.js
 
       - name: Commit & Push changes
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # 这里要确保仓库 Secrets 里有 GITHUB_TOKEN
         run: |
-          git config --global user.name 'github-actions[bot]'
-          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git add .
-          git commit -m "Sync Notion notes $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
-          git push https://x-access-token:$GITHUB_TOKEN@github.com/${{ github.repository }} HEAD:main
+          git diff-index --quiet HEAD || git commit -m "Sync Notion notes $(date +'%Y-%m-%d %H:%M:%S')"
+          git push https://x-access-token:${GITHUB_TOKEN}@github.com/${{ github.repository }} HEAD:main
