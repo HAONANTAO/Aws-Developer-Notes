@@ -31,12 +31,12 @@ jobs:
         env:
           PAT_TOKEN: ${{ secrets.FORNOTION }}
         run: |
+          echo "PAT_TOKEN prefix: ${PAT_TOKEN:0:4}****"  # 只打印前4位，防止泄露
+
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
 
           git add .
           git commit -m "Sync Notion notes $(date +'%Y-%m-%d %H:%M:%S')" || echo "No changes to commit"
 
-          git remote set-url origin https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }}
-          git push origin main
-
+          git push https://x-access-token:${PAT_TOKEN}@github.com/${{ github.repository }} HEAD:main
