@@ -1,7 +1,6 @@
 import fs from 'fs';
 import { Client } from '@notionhq/client';
 
-// 从环境变量读取token和pageId
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const pageId = process.env.NOTION_PAGE_ID;
 
@@ -26,41 +25,45 @@ function extractTextFromBlocks(blocks) {
   let content = '';
 
   for (const block of blocks) {
-    if (!block || typeof block.type !== 'string') {
-      // 跳过无效block
-      continue;
-    }
+    if (!block || typeof block.type !== 'string') continue;
 
-    if (block.type === 'paragraph' && block.paragraph?.text?.length > 0) {
-      content += block.paragraph.text.map(t => t.plain_text).join('') + '\n\n';
-    } else if (block.type === 'heading_1' && block.heading_1?.text?.length > 0) {
-      content += '# ' + block.heading_1.text.map(t => t.plain_text).join('') + '\n\n';
-    } else if (block.type === 'heading_2' && block.heading_2?.text?.length > 0) {
-      content += '## ' + block.heading_2.text.map(t => t.plain_text).join('') + '\n\n';
-    } else if (block.type === 'heading_3' && block.heading_3?.text?.length > 0) {
-      content += '### ' + block.heading_3.text.map(t => t.plain_text).join('') + '\n\n';
+    const getText = (richText) => richText.map(t => t.plain_text).join('');
+
+    if (block.type === 'paragraph' && block.paragraph?.rich_text?.length > 0) {
+      content += getText(block.paragraph.rich_text) + '\n\n';
+    } else if (block.type === 'heading_1' && block.heading_1?.rich_text?.length > 0) {
+      content += '# ' + getText(block.heading_1.rich_text) + '\n\n';
+    } else if (block.type === 'heading_2' && block.heading_2?.rich_text?.length > 0) {
+      content += '## ' + getText(block.heading_2.rich_text) + '\n\n';
+    } else if (block.type === 'heading_3' && block.heading_3?.rich_text?.length > 0) {
+      content += '### ' + getText(block.heading_3.rich_text) + '\n\n';
     }
-    // 可继续支持更多类型
   }
 
   return content;
 }
 
-
 async function main() {
   if (!pageId || !process.env.NOTION_TOKEN) {
-    console.error('请确保设置了 NOTION_TOKEN 和 NOTION_PAGE_ID 环境变量');
+    console.error('❌ 请确保设置了 NOTION_TOKEN 和 NOTION_PAGE_ID');
     process.exit(1);
   }
 
   try {
     const blocks = await fetchAllBlocks(pageId);
+    console.log(`✅ 获取 ${blocks.length} 个 blocks`);
+
+    if (blocks.length > 0) {
+      console.log('🔍 第一个 block:', JSON.stringify(blocks[0], null, 2));
+    }
+
     const markdown = extractTextFromBlocks(blocks);
 
-    fs.writeFileSync('NOTION_SYNC.md', markdown, 'utf8');
-    console.log('同步完成，内容已写入 NOTION_SYNC.md');
+    fs.writeFileSync('NOTION_SYNC.md', markdown || '⚠️ 页面没有可写入的文本内容', 'utf8');
+    console.log('✅ 同步完成，内容已写入 NOTION_SYNC.md');
   } catch (err) {
-    console.error('同步失败:', err);
+    console.error('❌ 同步失败:', err.message);
+    fs.writeFileSync('NOTION_SYNC.md', '❌ 同步失败：' + err.message, 'utf8');
     process.exit(1);
   }
 }
