@@ -4,12 +4,19 @@ import { Client } from '@notionhq/client';
 const notion = new Client({ auth: process.env.NOTION_TOKEN });
 const pageId = process.env.NOTION_PAGE_ID;
 
-// 递归获取所有子 block
+// ✅ 新增：记录已访问的 block 避免递归死循环
+const visited = new Set();
+
 async function fetchAllBlocks(blockId) {
   const blocks = [];
 
   async function recurse(block_id) {
+    if (visited.has(block_id)) return [];
+    visited.add(block_id);
+
+    let results = [];
     let cursor;
+
     do {
       const res = await notion.blocks.children.list({
         block_id,
@@ -20,22 +27,24 @@ async function fetchAllBlocks(blockId) {
 
       for (const block of res.results) {
         if (!block) continue;
+
+        // ✅ 如果有 children，递归处理
         if (block.has_children) {
           block.children = await recurse(block.id);
         }
-        blocks.push(block);
+
+        results.push(block);
       }
 
       cursor = res.has_more ? res.next_cursor : undefined;
     } while (cursor);
 
-    return blocks;
+    return results;
   }
 
   return recurse(blockId);
 }
 
-// 渲染 Markdown
 function renderMarkdown(blocks, depth = 0) {
   let md = '';
   const indent = '  '.repeat(depth);
@@ -83,11 +92,9 @@ function renderMarkdown(blocks, depth = 0) {
         md += `${indent}> 💡 ${getText(block.callout.rich_text)}\n\n`;
         break;
       default:
-        // 如果你要支持更多 block 类型，可以在这里扩展
         break;
     }
 
-    // 递归渲染子内容（除 toggle 外，toggle 已递归处理）
     if (block.children && block.type !== 'toggle') {
       md += renderMarkdown(block.children, depth + 1);
     }
@@ -96,7 +103,6 @@ function renderMarkdown(blocks, depth = 0) {
   return md;
 }
 
-// 主函数入口
 async function main() {
   if (!pageId || !process.env.NOTION_TOKEN) {
     console.error('请设置 NOTION_TOKEN 和 NOTION_PAGE_ID 环境变量');
