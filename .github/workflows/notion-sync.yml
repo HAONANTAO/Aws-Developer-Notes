@@ -1,44 +1,112 @@
-name: Notion Notes Sync
+import fs from 'fs';
+import { Client } from '@notionhq/client';
 
-on:
-  schedule:
-    - cron: '0 0 * * *'   # 每天 UTC 零点执行
-  workflow_dispatch:       # 支持手动触发
+const notion = new Client({ auth: process.env.NOTION_TOKEN });
+const pageId = process.env.NOTION_PAGE_ID;
 
-jobs:
-  sync:
-    runs-on: ubuntu-latest
+// 获取子 block（支持递归）
+async function fetchAllBlocks(blockId) {
+  const blocks = [];
 
-    steps:
-      - name: Checkout repository (no GitHub bot credentials)
-        uses: actions/checkout@v3
-        with:
-          persist-credentials: false  # ❗️使用你自己的 PAT，禁用默认
+  async function fetchBlockChildren(id) {
+    let cursor = undefined;
+    do {
+      const response = await notion.blocks.children.list({
+        block_id: id,
+        start_cursor: cursor,
+      });
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
+      if (!response.results) {
+        throw new Error('Notion API 返回结果中没有 results');
+      }
 
-      - name: Install dependencies
-        run: npm install
+      for (const block of response.results) {
+        blocks.push(block);
 
-      - name: Run Notion sync script
-        env:
-          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
-          NOTION_PAGE_ID: ${{ secrets.NOTION_PAGE_ID }}
-        run: node scripts/notion-sync.js
+        // 如果该 block 还有子内容，递归继续取
+        if (block.has_children) {
+          const children = await fetchBlockChildren(block.id);
+          block.children = children; // 附加子 block 到当前 block 上
+        }
+      }
 
-      - name: Commit changes (if any)
-        run: |
-          git config user.name "HAONANTAO"
-          git config user.email "haonantao@example.com"
-          git add .
-          git diff --cached --quiet || git commit -m "Sync Notion notes $(date +'%Y-%m-%d %H:%M:%S')"
+      cursor = response.has_more ? response.next_cursor : undefined;
+    } while (cursor);
 
-      - name: Push to GitHub using PAT
-        env:
-          PAT: ${{ secrets.NOTIONSECRET }}
-        run: |
-          git remote set-url origin https://x-access-token:${PAT}@github.com/${{ github.repository }}.git
-          git push origin main
+    return blocks;
+  }
+
+  return fetchBlockChildren(blockId);
+}
+
+// 将 block 转为 markdown（支持递归嵌套）
+function renderMarkdown(blocks, depth = 0) {
+  let md = '';
+
+  for (const block of blocks) {
+    const prefix = '  '.repeat(depth); // 缩进
+
+    switch (block.type) {
+      case 'paragraph':
+        md += prefix + block.paragraph.rich_text.map(t => t.plain_text).join('') + '\n\n';
+        break;
+      case 'heading_1':
+        md += prefix + '# ' + block.heading_1.rich_text.map(t => t.plain_text).join('') + '\n\n';
+        break;
+      case 'heading_2':
+        md += prefix + '## ' + block.heading_2.rich_text.map(t => t.plain_text).join('') + '\n\n';
+        break;
+      case 'heading_3':
+        md += prefix + '### ' + block.heading_3.rich_text.map(t => t.plain_text).join('') + '\n\n';
+        break;
+      case 'bulleted_list_item':
+        md += prefix + '- ' + block.bulleted_list_item.rich_text.map(t => t.plain_text).join('') + '\n';
+        break;
+      case 'numbered_list_item':
+        md += prefix + '1. ' + block.numbered_list_item.rich_text.map(t => t.plain_text).join('') + '\n';
+        break;
+      case 'toggle':
+        md += prefix + '▶️ ' + block.toggle.rich_text.map(t => t.plain_text).join('') + '\n';
+        if (block.children) {
+          md += renderMarkdown(block.children, depth + 1);
+        }
+        break;
+      case 'to_do':
+        const checked = block.to_do.checked ? '☑️' : '⬜️';
+        md += prefix + `${checked} ` + block.to_do.rich_text.map(t => t.plain_text).join('') + '\n';
+        if (block.children) {
+          md += renderMarkdown(block.children, depth + 1);
+        }
+        break;
+      default:
+        // 忽略未处理类型
+        break;
+    }
+
+    if (block.children && block.type !== 'toggle' && block.type !== 'to_do') {
+      md += renderMarkdown(block.children, depth + 1);
+    }
+  }
+
+  return md;
+}
+
+async function main() {
+  if (!pageId || !process.env.NOTION_TOKEN) {
+    console.error('请设置环境变量 NOTION_TOKEN 和 NOTION_PAGE_ID');
+    process.exit(1);
+  }
+
+  try {
+    const blocks = await fetchAllBlocks(pageId);
+    const markdown = renderMarkdown(blocks);
+
+    fs.writeFileSync('NOTION_SYNC.md', markdown.trim(), 'utf8');
+    console.log('✅ Notion 同步成功，内容写入 NOTION_SYNC.md');
+  } catch (err) {
+    console.error('❌ 同步失败:', err.message);
+    process.exit(1);
+  }
+}
+
+main();
