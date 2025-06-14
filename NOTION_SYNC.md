@@ -1788,5 +1788,61 @@ AWS Lambda 是一种无服务器（serverless）计算服务，它让你可以�
 - SNS（通知触发）
 - Kinesis（流数据处理）
 - EventBridge（事件总线）
-01.
+
+
+01.Serverless—→ Lambda
+
+
+
+02.introduction
+
+what is Serverless?  ⇒ FaaS(function as Service)
+
+is a new paradigm in which the developers do not have to manage servers anymore
+
+Serverless（无服务器）是一种云计算架构模型，不是真的没有服务器，而是指你不需要管理服务器。云服务商（如 AWS、Azure、GCP）会在背后为你自动分配、运行和扩展服务器资源，你只需关注写业务逻辑代码。
+
+## ✅ 通俗理解
+
+> “Serverless 就是我写好代码，上传到云端，不用管部署、扩容、运维，云服务自动搞定，按调用次数计费。”
+
+## ✅ 特点总结
+
+Serveless in AWS:
+
+Lambda, Dynamo DB,Cognito,API Gateway,S3…
+
+
+
+03.
+
+考试必考！
+
+Why AWS Lambda?
+
+no servers, run on-demand, short executions,scal;ing is aautomated!
+
+easy price
+
+integration
+
+Thumbnail creation
+
+在 AWS 中，**"Thumbnail creation"（缩略图生成）**是一个非常常见、典型的 Serverless 应用场景，可以完全由 AWS 的 Serverless 服务来实现，不需要你自己搭建服务器！
+
+## 📸 场景描述
+
+用户上传图片 → 自动生成缩略图 → 存储到另一个 S3 桶（或同一个桶的不同路径）
+
+
+
+Serverless CRON job
+
+在 AWS 中，Serverless CRON job 是指不依赖 EC2 或服务器的定时任务，可以用 Lambda + EventBridge（以前叫 CloudWatch Events） 实现。
+
+## ✅ 核心概念
+
+
+
+04.
 
