@@ -1844,5 +1844,317 @@ Serverless CRON job
 
 
 
-04.
+04.hands on 很重要
+
+
+
+05.Synchronous invocation
+
+在 AWS 中，Lambda 的 Synchronous Invocation（同步调用） 是指：
+
+> 调用者会等待 Lambda 函数执行完成并拿到结果，然后再继续后续操作。
+
+CLI,SKD,API Gateway,Load Balancer
+
+直接返回result
+
+
+
+06.hands-on(cloudshell)
+
+~ $ aws lambda invoke   --function-name DemoLambda   --cli-binary-format raw-in-base64-out   --payload '{"key1":"value1","key2":"value2","key3":"value3"}'   --region us-east-1   response.json
+{
+"StatusCode": 200,
+"ExecutedVersion": "$LATEST"
+}
+~ $
+
+
+
+07.
+
+Lambda integration with ALB Application Load Balancer (ALB)
+
+## 什么是 Lambda 与 ALB 集成？
+
+- Application Load Balancer (ALB) 是 AWS 提供的第七层负载均衡器，支持 HTTP/HTTPS 请求路由。
+- ALB 可以直接调用 Lambda 函数 作为目标（Target），这意味着 ALB 收到 HTTP 请求后，可以把请求“转发”给 Lambda 执行。
+- 这样，你就能用 Lambda 来处理来自 ALB 的 Web 请求，实现无服务器的 HTTP 服务。
+## 为什么用 ALB + Lambda？
+
+- ALB 支持 HTTP/HTTPS 协议，适合处理 REST API 或 Web 应用流量。
+- Lambda 让你免维护服务器，自动弹性伸缩。
+- 结合使用可以轻松实现无服务器的 Web 后端。
+## ALB Lambda 集成工作流程
+
+```plain text
+
+客户端 HTTP 请求
+      ↓
+Application Load Balancer (ALB)
+      ↓
+调用 Lambda 函数
+      ↓
+Lambda 处理请求，返回响应
+      ↓
+ALB 将响应转发给客户端
+```
+
+ALB to Lambda : HTTP To JSON
+
+Application Load Balancer (ALB) 把 HTTP 请求转成 JSON 格式的事件，传给 Lambda 函数。
+
+## 具体来说：
+
+- ALB 作为 HTTP/HTTPS 请求的入口
+- 它会把每个 HTTP 请求转成一个 JSON 对象，作为 Lambda 的输入事件（event）
+- Lambda 通过解析这个 JSON，就能拿到请求方法、路径、头信息、查询参数、请求体等数据
+
+
+ALB Multi-Header Values (考试会考)
+
+ALB（Application Load Balancer）支持Multi-Header Values，意思是一个 HTTP 响应头可以带多个同名的值。
+
+
+
+08.hands on 走一个EC2 ALB-lambda流程
+
+
+
+09.
+
+Lambda@Edge 边缘节点 = 离用户近的数据中心，帮你加速内容分发和处理请求。
+
+Lambda@Edge 是 AWS Lambda 的一个扩展服务，专门用于与 Amazon CloudFront（AWS 的全球内容分发网络，CDN）集成，允许你在 CloudFront 边缘节点上运行 Lambda 函数，从而实现低延迟、高效的请求处理和内容定制。
+
+### Lambda@Edge 的核心特点
+
+- 运行在边缘节点：你的代码部署在 CloudFront 全球各地的边缘位置，用户请求时离用户最近的节点执行代码，降低延迟。
+- 响应更快：比起传统在中心区域（如 AWS 区域内）执行 Lambda，边缘执行减少了网络往返时间。
+- 支持多种触发点：可以在以下四个事件触发 Lambda 函数：
+你在悉尼，访问一个部署在美国的服务器：
+
+- 普通访问：请求直接飞到美国，响应再回到悉尼，速度慢，延迟高。
+- 使用 CloudFront 边缘节点：请求先到悉尼附近的边缘节点，边缘节点缓存了内容或运行 Lambda@Edge 处理请求，再返回给你，速度快很多。
+
+
+10.Asychronous invocation
+
+在 AWS Lambda 中，Asynchronous Invocation（异步调用） 是指你调用一个 Lambda 函数后，不等待函数执行完成就立即返回，由 AWS 自动在后台EventQueue执行函数逻辑。
+
+- Viewer Request（用户请求到达 CloudFront 时）
+- Viewer Response（CloudFront 返回响应给用户之前）
+- Origin Request（CloudFront 向源站发起请求之前）
+- Origin Response（源站响应返回给 CloudFront 之前）
+### ✅ 简单理解：
+
+你“扔”一个任务给 Lambda，AWS 说“你走吧，我帮你搞定，搞完了我再处理后续的事，比如重试或记录日志。”
+
+### 📦 异步调用的场景
+
+适合以下情况：
+
+- 任务耗时较长，不希望调用方等待（如处理图片、视频转码等）
+- 触发事件后不需要立即返回结果（如 S3 上传文件后触发 Lambda）
+- 解耦业务逻辑（如用户注册后异步发送欢迎邮件）
+Idemoptent
+
+S3,SNS,CloudWatch,CodeCommit…
+
+
+
+11.hands on
+
+~ $ aws lambda invoke   --function-name DemoLambda   --cli-binary-format raw-in-base64-out   --payload '{"key1":"value1","key2":"value2","key3":"value3"}' --invocation-type Event   --region ap-southeast-2   response.json
+{
+"StatusCode": 202
+}
+以异步方式（--invocation-type Event）
+
+只是不返回文件，内容从CloudWatch logs看
+
+
+
+可以用SQS做DLQ，retry max到了之后到DLQ
+
+
+
+12.
+
+CloudWatch Events/EventBridge⇒可以做CRON
+
+你提到 CloudWatch Events/EventBridge，这通常是指 使用 EventBridge 来触发 Lambda 函数。
+
+## 🔄 什么是 CloudWatch Events / EventBridge？
+
+AWS EventBridge（之前叫 CloudWatch Events）是一个 事件总线服务，可以基于各种事件（如计划任务、S3 文件上传、EC2 状态改变、Lambda 自定义事件等）自动触发目标服务，比如：
+
+- Lambda 函数
+- Step Functions
+- SQS 队列
+- SNS 通知
+- ECS 任务等
+
+
+13.hands on CRON bridge
+
+AWS EventBridge =⇒ triger CRON on Lambda
+
+
+
+14.
+
+S3 Event Notifications
+
+
+
+15.S3 hands on
+
+
+
+16.
+
+Event Source mapping
+
+“Event Source Mapping” 是 AWS Lambda 用来连接某些事件源（Event Sources）和 Lambda 函数的配置，允许 Lambda 自动消费来自事件源的数据，比如：
+
+- AWS Kinesis Streams
+- Amazon DynamoDB Streams
+- Amazon MQ
+- Amazon Managed Streaming for Apache Kafka (MSK)
+等流式数据源。
+
+### Event Source Mapping 是什么？
+
+它本质上是一种绑定关系，Lambda 会自动轮询事件源（比如 Kinesis 或 DynamoDB Streams），然后触发 Lambda 处理新到的数据记录。
+
+- Event Source Mapping 是 Lambda 和数据流（比如 Kinesis 或 DynamoDB Streams）之间的“自动连接器”。
+- 它帮你“持续监听”这些数据流，一有新数据就自动拉取并触发 Lambda 执行。
+- 你不用自己写代码去轮询，Lambda 会自动帮你处理数据流里的“新消息”。
+
+
+17.hands on SQS
+
+
+
+18.
+
+Lambda destionation
+
+Lambda destinations 是 当 Lambda 执行完成后自动转发结果 的一种机制，可以用来追踪 异步调用的结果（成功或失败）。它常用于：
+
+- 异步调用时收集处理结果
+- 替代手动写日志或错误处理逻辑
+- 连接后续流程（如 SNS、SQS、EventBridge、另一个 Lambda）
+推荐用这个来代替DLQ！
+
+
+
+19.hands on Lambda destionation
+
+
+
+20.
+
+Lambda Execution Role(IAM)
+
+「Lambda 在 AWS 里的权限通行证」
+
+—— 只有这个角色授权了，Lambda 才能访问其他 AWS 服务。
+
+Lambda Execution Role (IAM) 是指 AWS Lambda 执行函数时使用的 IAM 角色，它控制该 Lambda 拥有哪些 AWS 服务的访问权限。
+
+### 🧠 简单理解：
+
+这是 Lambda 的“身份”，它决定 Lambda 可以：
+
+- 访问哪些资源（比如读取 S3 文件、写入 DynamoDB、发送 SNS 邮件等）；
+- 被哪些服务调用（如被 EventBridge、S3、API Gateway 等触发）；
+最好是one role per function
+
+base poliy ⇒这份策略就是最基本的 —— 只允许 Lambda 把日志写到 CloudWatch。
+
+
+
+21.hands on different permission (考试必考！）
+
+
+
+22.
+
+Lambda Environment variables ⇒ key value pairs
+
+在 AWS Lambda 中，Environment Variables（环境变量） 是用来在运行时为你的函数传递配置信息的一种方式。
+
+
+
+1. hands on Lambda Environment variables
+
+
+24.Lambda monitoring and logging
+
+CloudWatch logs/metrics
+
+X-ray
+
+AWS X-Ray 是一个分布式追踪服务，用来分析和调试你的应用程序，特别适合微服务、Lambda、API Gateway 等。它能帮你看到请求在系统中的执行路径、延迟、错误等情况，方便定位性能瓶颈和故障。
+
+### X-Ray 主要功能
+
+- 分布式追踪（Tracing）：跟踪请求跨多个服务的流程。
+- 性能分析：查看延迟来源，识别慢请求。
+- 错误检测：定位异常和错误点。
+- 服务地图（Service Map）：展示系统中各服务的调用关系。
+考试会考
+
+
+
+25.Lambda trace hands on
+
+“Throttle”（节流）在 AWS 和编程中常见，意思是限制操作频率，防止资源过载。具体到 AWS Lambda 或 AWS 服务里，它指的是限制单位时间内请求或调用的次数，避免系统过载或滥用。
+
+
+
+26.
+
+Lambda in VPC
+
+default in AWS owned VPC
+
+## 什么是 Lambda in VPC？
+
+AWS Lambda 默认运行在 AWS 管理的一个共享网络环境中（不是在你的私有网络里）。如果你需要让 Lambda 函数访问你自己 VPC（虚拟私有云）内的资源（比如 RDS 数据库、ElastiCache、私有子网内的服务），就必须把 Lambda 配置到你的 VPC 里。
+
+## 为什么要把 Lambda 放进 VPC？
+
+- 访问私有资源：只能在 VPC 内部访问的数据库、缓存、内部 API 等。
+- 安全隔离：在 VPC 内能更好控制安全组、网络访问策略。
+- 满足合规要求：部分业务需要运行在专有网络环境中。
+## Lambda in VPC 的关键点
+
+1. 子网（Subnet）
+1. 安全组（Security Group）
+1. NAT Gateway（NAT网关）或 NAT实例
+1. 权限
+
+
+你需要给 Lambda 选择一个或多个 VPC 子网（一般是私有子网）运行。
+
+分配给 Lambda 的安全组控制它的入站和出站流量。
+
+如果 Lambda 需要访问公网（比如访问外部 API），而你选择的是私有子网，必须配置 NAT Gateway，供 Lambda 访问互联网。
+
+Lambda 角色的 IAM 权限需要包含ec2:CreateNetworkInterface、ec2:DescribeNetworkInterfaces、ec2:DeleteNetworkInterface，因为 Lambda 会在 VPC 内创建和管理弹性网卡（ENI）。
+
+
+
+Deploying a Lambda function in public subnet does not give it internet access or a public IP！！
+
+用NAT Gateway/instance
+
+27.hands on Lambda in VPC
+
+
+
+28.
 
