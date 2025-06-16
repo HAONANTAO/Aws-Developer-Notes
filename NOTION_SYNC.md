@@ -26,6 +26,10 @@
 
 # Chapter 21 - Lambda
 
+# Chapter 22 - DynamoDB
+
+
+
 AWS — cloud practitioner
 
 介绍注册和up主
@@ -2136,7 +2140,123 @@ AWS Lambda 默认运行在 AWS 管理的一个共享网络环境中（不是在�
 1. 安全组（Security Group）
 1. NAT Gateway（NAT网关）或 NAT实例
 1. 权限
+Cold Start（冷启动） 是 AWS Lambda 中非常核心且常被讨论的问题之一，特别是当你需要快速响应的无服务器应用时。
 
+## 🧊 什么是 Cold Start？
+
+当 AWS Lambda 首次调用 或者一段时间没有使用后再次调用时，Lambda 需要“热身”：
+
+### 它做了几件事：
+
+1. 分配资源：创建一个容器来运行你的代码
+1. 下载依赖和初始化运行时（如 Node.js、Python）
+1. 执行你代码外的初始化部分（const, require, 数据库连接等）
+这个过程就是 “Cold Start”。
+
+## 🔥 Hot Start（热启动）对比
+
+31.hands on
+
+
+
+32.
+
+external dependence
+
+在 AWS Lambda 中，External Dependency（外部依赖） 指的是你的函数执行时依赖于函数代码之外的库、服务、或资源
+
+
+
+33.Hands on 
+
+
+
+
+
+34.CloudFOMRATION
+
+
+
+35.Hands on 
+
+
+
+36.Lambda Layers
+
+Lambda Layers 是 AWS 提供的一种 共享代码机制，允许你把常用库、函数、配置等单独打包并与多个 Lambda 函数共享，而不是每次都把它们嵌入到函数 zip 包里。
+
+## 🎯 为什么用 Lambda Layers？
+
+
+
+37.hands on
+
+🔄 简单来说：
+
+Lambda Layer 就是一个打包好的共享依赖库，上传一次后，多个 Lambda 函数就可以引用它，而 不用每次都把依赖打进函数 zip 包。
+
+
+
+38.lambda container images
+
+Lambda 支持两种打包方式：
+
+1. ZIP 包（传统方式）
+1. ✅ Container Image（容器镜像方式）
+你问的 Lambda Container Images 指的就是第 2 种方式。
+
+## 🐳 什么是 Lambda Container Image？
+
+就是你用 Docker 构建一个容器镜像，然后把这个镜像部署到 Lambda 上，AWS 会负责运行它。这个镜像最多可以是 10GB，远比 ZIP 包（50MB）大很多。
+
+
+
+39.Lambda Versions and Alias
+
+在 AWS Lambda 中，Versions（版本） 和 Aliases（别名） 是部署和管理函数更新的核心机制，特别适合用于 CI/CD、灰度发布、蓝绿部署 等场景。
+
+## 🔢 Lambda Versions（版本）
+
+每次你**发布（Publish）**一个 Lambda 函数，就会创建一个新的 版本号（是一个整数，比如 1, 2, 3）。
+
+📌 特点：
+
+- 版本是只读的，不可更改。
+- 每个版本都有自己的 ARN，例如：
+- 可以回滚到旧版本运行。
+- 默认调用的是 $LATEST，是未发布状态（开发中）。
+## 🏷 Lambda Aliases（别名）
+
+Alias 是对某个版本的“指针”，就像 Git 中的 tag/branch。
+
+📌 特点：
+
+- 每个别名指向一个具体版本：
+- 可以使用别名来调用函数，而不用记住版本号。
+- 可以设置权重路由，比如 90% 请求走 v1，10% 请求走 v2（用于灰度发布）。
+
+
+40.hands on
+
+
+
+41.Lambda code deployment
+
+Lambda 代码部署方式 + 优点 ⬇️
+
+### 1. 控制台上传 ZIP
+
+- 🧩 方法：在 Lambda 控制台上传 .zip 文件
+- ✅ 好处：简单快速，适合调试或小项目
+### 2. S3 上传 ZIP
+
+- 🧩 方法：先将 .zip 上传到 S3，再指定 S3 路径部署
+- ✅ 好处：支持大文件，适合自动化部署
+### 3. 使用 CloudFormation / SAM / CDK
+
+- 🧩 方法：基础设施即代码部署（YAML/CDK）
+- ✅ 好处：版本可控、易于协作、自动化强
+### 4. 容器镜像（Docker）
 
 你需要给 Lambda 选择一个或多个 VPC 子网（一般是私有子网）运行。
 
@@ -2157,4 +2277,278 @@ Deploying a Lambda function in public subnet does not give it internet access or
 
 
 28.
+
+Lambda function configuration
+
+Lambda function configuration 是指你在创建或管理 AWS Lambda 函数时所设置的一系列参数，用于控制函数的运行行为、资源分配、触发器、权限等。
+
+RAM,Timeout
+
+initialize outside the handler
+
+
+
+29.
+
+Lambda hands on 
+
+
+
+30.concurrency and throttling
+
+## 🔄 1. Concurrency（并发）
+
+### ➤ 什么是并发？
+
+当多个事件几乎同时触发 Lambda 函数时，Lambda 会并发启动多个实例来同时处理这些事件。
+
+- 每个“并发实例”= 同时在运行的 Lambda 实例。
+- 每个事件会分配一个 Lambda 实例来处理。
+### ✅ 有哪几种并发？
+
+## ⚠️ 2. Throttling（限流）
+
+### ➤ 什么是 Throttling？
+
+当你触发 Lambda 的频率超过它的并发限制，新请求会被丢弃或延迟，这叫做限流。
+
+例如：
+
+- 如果你的账户并发限制是 1000，而 1000 个 Lambda 都在跑，第 1001 个请求会被 Throttled。
+### 🔁 被限流后会发生什么？
+
+取决于触发来源：
+
+```plain text
+
+arn:aws:lambda:region:account-id:function:function-name:
+```
+
+```plain text
+
+arn:aws:lambda:region:account-id:function:function-name:PROD
+```
+
+- 🧩 方法：构建并上传容器镜像至 ECR，Lambda 从镜像运行
+- ✅ 好处：自定义运行环境、支持大型依赖
+### 5. GitHub Actions / CI 工具
+
+- 🧩 方法：用 CI 工具自动打包部署到 Lambda
+- ✅ 好处：自动化、持续集成部署方便
+
+
+Linear,Canary,AllAtOnce
+
+
+
+42.Lambda Limits 考试会考
+
+AWS Lambda 的主要限制（Lambda Limits），按类别简化列出，方便你快速掌握：
+
+### 🧠 基本执行限制
+
+### ⚙️ 部署相关限制
+
+### 🔁 并发限制
+
+### 🧱 触发器限制
+
+- API Gateway 同步调用负载上限：6MB
+- EventBridge 触发频率限制：每秒成千上万事件，但受账户配额限制
+- S3 事件通知：每个 bucket 最多配置 100 个通知（多个函数/目标）
+### 🔐 IAM 和角色
+
+- 执行角色必须在调用服务前具有相应权限（例如访问 S3、DynamoDB）
+
+
+43.best practices
+
+Heavy-duty work outside the function handler（耗时操作放在函数处理器外）
+
+- 说明：将诸如数据库连接、SDK 初始化、配置加载等耗时操作放在 Lambda 函数的主处理函数（handler）之外。
+- 原因：这些操作在 Lambda 冷启动时只执行一次，后续复用同一个运行环境实例时就不用重复执行，提高响应速度。
+environment variables
+
+### Environment variables（环境变量）
+
+- 说明：通过环境变量存储配置、API Key、数据库连接字符串等。
+- 优点：
+minimize deployment package size to its runtime
+
+### Minimize deployment package size to its runtime（最小化部署包大小）
+
+- 说明：只打包 Lambda 运行所需的代码和依赖，剔除无用文件和开发依赖。
+- 原因：
+avoid recursive code
+
+### Avoid recursive code（避免递归调用）
+
+- 说明：防止 Lambda 函数间接或直接触发自己，造成无限循环调用。
+- 原因：递归调用会导致费用飙升，资源耗尽，甚至导致函数超时。
+
+
+- 配置和代码分离，部署灵活。
+- 支持不同环境（开发、测试、生产）使用不同配置。
+- 避免把敏感信息写死在代码里。
+- 减少冷启动时间，提高性能。
+- 降低上传和部署时间。
+### 什么是 DynamoDB？
+
+Amazon DynamoDB 是 AWS 提供的一种 完全托管的 NoSQL 数据库服务，它支持键值和文档数据结构，专为高性能、低延迟应用设计，且具有高度的可扩展性和可用性。
+
+### DynamoDB 的核心特点
+
+- 完全托管
+- 高性能、低延迟
+- 自动扩展
+- 灵活的数据模型
+- 支持事务
+- 内置安全和访问控制
+- 全球分布
+### DynamoDB 的基本概念
+
+## DynamoDB 和 MongoDB 的区别
+
+## DynamoDB 不是 Cloud MongoDB
+
+- DynamoDB 不是 MongoDB 的云版本。
+- MongoDB 本身是一个开源项目，有自己独立的数据库引擎和查询语言。
+- AWS 上也可以部署 MongoDB，或者使用官方 MongoDB Atlas 云服务。
+
+
+01.Intro
+
+
+
+02.
+
+NoSQLServeless Database ⇒ distributed
+
+不是传统式RDBMS
+
+scale horizontally
+
+made of Tables—> has primary key
+
+infinite number of items = rows
+
+each items has attributes
+
+
+
+how to choose PK?（考试必考！）
+
+1.partition key(hash)
+
+2.partition key + sort key(hash + range)
+
+
+
+03.hands on
+
+
+
+04.Dynamo DB Read/Write Capacity Modes
+
+在 Amazon DynamoDB 中，你可以为每个表选择 两种读写容量模式之一：
+
+## 🔄 DynamoDB 的 Read/Write Capacity Modes
+
+## ✳️ 1. On-Demand 模式（default按需模式）
+
+### 特点：
+
+- 不需要设置 RCU/WCU。
+- DynamoDB 根据你的实际请求自动扩容和缩容。
+- 支持高并发突增，不需要担心容量。
+- 按请求付费（每次读取和写入都计费）
+- 2.5倍贵
+### 计费方式（截至 2025 年标准）：
+
+- 每个读取请求（4KB）计费
+- 每个写入请求（1KB）计费
+### 适合：
+
+- 应用刚上线或不确定使用量
+- 流量不稳定/不可预测的场景
+- MVP 阶段的产品或黑五大促电商等突发流量场景
+## ⚙️ 2. Provisioned 模式（预置吞吐量）
+
+### 特点：
+
+- 你自己设定 Read/Write Capacity Units（RCU/WCU）
+- 超出设定容量会被限速（除非开启 Auto Scaling）
+- 更便宜（对于稳定、可控流量），支持自动扩缩配置
+### 可选功能：
+
+- Auto Scaling（自动扩缩）：自动根据需求调节 RCU/WCU。
+- Reserved Capacity（预留容量）：长期租用更划算，适合大企业。
+### 适合：
+
+- 流量有规律（白天高，晚上低）
+- 成本控制严格
+- 对性能控制要求较高（避免冷启动）
+## Strongly Consistent Read（强一致性读取）
+
+### ✅ 特点：
+
+- 读取的数据始终是最新的（也就是写入成功后，你立刻能读到最新值）
+- 适合对数据准确性要求非常高的业务场景
+### 💡 举个例子：
+
+> 你刚往表里写入了一条记录，然后马上发起强一致读取，你一定能读到那条记录。
+
+### ⛔ 缺点：
+
+- 延迟稍高（AWS 内部要确保一致性）
+- 吞吐量成本高：1 个 RCU = 1 次强一致性读取（每 4KB）
+而是相比“最终一致读”，吞吐上效率减半 ⇒ 成本翻倍
+
+## 🔄 Eventually Consistent Read（最终一致性读取）【默认】
+
+### ✅ 特点：
+
+- 返回的数据可能不是最新的，但在短时间内（通常几百毫秒）会自动变成最新
+- 是 默认的读取方式，延迟低，吞吐效率高
+### 💡 举个例子：
+
+> 你刚写入了一条数据，马上读取，可能读不到刚写的那条（因为它还没同步到所有副本），但稍等一下就可以读到了。
+
+### ✅ 优点：
+
+- 吞吐量更高：1 个 RCU = 2 次最终一致性读取（每 4KB）
+- 成本更低，性能更好
+## 🧱 什么是 Partition？
+
+在 DynamoDB 中，Partition（分区） 是存储数据的实际物理单位（底层是 SSD 存储 + 网络接口）。
+
+每个分区具有：
+
+## ⏱ Partition Split（分区间隔 = 分区拆分）
+
+当你的表的容量或数据量超过某个阈值时，DynamoDB 会在后台自动进行分区拆分。这就是你提到的 “partition intervals” 背后概念。
+
+### DynamoDB 会根据以下 3 个条件触发分区拆分：
+
+AWS 负责硬件维护、软件补丁、自动备份、恢复及扩展，用户无需管理底层基础设施。
+
+支持单毫秒级延迟，适合需要高吞吐量的应用场景。
+
+根据应用负载自动调整吞吐量和存储容量，无需手动干预。
+
+支持键值对和文档数据存储，数据结构灵活，不需要固定模式。
+
+支持原子性事务操作，保证多项数据操作的一致性。
+
+集成 AWS IAM 进行访问控制，支持加密数据存储和传输。
+
+支持全球表，数据可以跨多个区域同步，实现多区域容灾和低延迟访问。
+
+它是 AWS 自研的 NoSQL 数据库服务，设计理念和实现方式与 MongoDB 不同。
+
+05.hands on
+
+
+
+06.
 
