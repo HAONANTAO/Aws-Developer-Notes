@@ -28,7 +28,7 @@
 
 # Chapter 22 - DynamoDB
 
-
+# Chapter 23 -API GateWay
 
 AWS — cloud practitioner
 
@@ -2550,5 +2550,287 @@ AWS 负责硬件维护、软件补丁、自动备份、恢复及扩展，用户�
 
 
 
-06.
+06.writing data
+
+## 🧾 DynamoDB 写入数据的三种方式
+
+reading data
+
+GetItem,Query,Scan
+
+Delete Data:
+
+DeleteItem,Delete Table
+
+
+
+batch operation
+
+
+
+07.hands on
+
+
+
+08.Local Secondary Index(LSI)
+
+在 Amazon DynamoDB 中，Local Secondary Index (LSI) 是一种索引类型，用来在不改变主键的前提下，为 同一个分区键（Partition Key）添加不同的排序键（Sort Key）。
+
+## 📌 简单定义
+
+> LSI（本地二级索引）：允许你为 同一个分区键（PK），创建一个或多个不同的 排序键（SK） 来进行查询。
+
+## 🧠 举个例子
+
+假设你有一个表：Orders
+
+你希望按 userId 查询订单，但不是按 orderId 排序，而是按 CreatedAt 排序。此时就可以建一个 LSI。
+
+## ✅ 结构说明
+
+> GSI 是一种索引，允许你使用和主表完全不同的 Partition Key 和 Sort Key 来查询数据。
+
+## 🚀 和 LSI 的最大区别？
+
+类比
+
+你有一个图书馆：
+
+09.hands on
+
+
+
+10.PartiQL
+
+ DynamoDB 的 PartiQL（SQL 语法） ——
+
+它让使用者可以用类 SQL 的方式查询、插入、更新 DynamoDB 数据，不再局限于复杂的低级 API。
+
+## 🔍 什么是 PartiQL？
+
+> PartiQL（读作 "particle"） 是 AWS 推出的一种类 SQL 查询语言，
+
+## ✅ DynamoDB 使用 PartiQL 的好处
+
+11.Optimistic locking 考试会考
+
+## 什么是 Optimistic Locking（乐观锁）？
+
+- 假设多个用户/进程乐观地认为不会发生冲突，
+- 每次读取数据时带上一个版本号或时间戳（比如 version 字段），
+- 更新时检查版本号是否一致，只有一致时才允许写入，版本号不一致说明数据被别人修改过，写入失败。
+## DynamoDB 中的乐观锁
+
+### 实现方式：ConditionExpression + 版本号字段
+
+- 表里加一个数字类型字段 version，每次写入时：
+- 如果写入时 version 变了，DynamoDB 抛错，提示冲突
+
+
+12.DynamoDB Accelerator(DAX)
+
+## 什么是 DAX？
+
+- DAX 是一个全托管的内存缓存层，专门为 DynamoDB 设计
+- 它放在应用和 DynamoDB 之间，缓存热点数据，减少直接访问 DynamoDB 的次数
+- 读性能提升可达 10倍甚至更高
+- 兼容 DynamoDB API，应用端代码改动非常小
+## DAX 的特点
+
+DAX vs ElasticCache
+
+13.hands on
+
+
+
+14.DynamoDb Streams
+
+# DynamoDB Streams 简介
+
+- DynamoDB Streams 是 DynamoDB 提供的一个功能，用来捕获表中数据的实时变化（插入、修改、删除）
+- 它会以时间顺序记录表的变化事件，形成一个类似“变更日志”的数据流
+- 你可以用它实现数据复制、触发异步处理、审计日志、缓存更新等功能
+# DynamoDB Streams 的关键点
+
+# 工作流程示意
+
+1. 你开启 DynamoDB Streams 功能，并选择要捕获的事件类型
+1. 表数据变化时，事件会被写入到 Streams 中（类似队列）
+1. 你可以用 Lambda 函数或者其他消费者轮询读取 Streams 事件
+1. 根据事件类型和内容进行对应处理
+- DynamoDB Streams 是一个自动记录数据变化的日志流
+- 你可以把它当成监听器，实时监听表的数据变化
+- 配合 Lambda 或其他服务，实现自动响应和业务逻辑
+
+
+15.hands on 
+
+
+
+16.DynamoDB TTL
+
+Time to Live  → epoch timestampe
+
+
+
+17.DynamoDB CLI
+
+
+
+18.DynamoDB transactions ⇒ACID
+
+DynamoDB 的 Transactions（事务） 功能允许你对多个项（items）进行原子性读写操作，也就是说：要么全部成功，要么全部失败，类似于关系型数据库中的事务操作。
+
+## ✅ 一句话总结：
+
+> DynamoDB Transactions = 多项数据的原子读写，确保一致性
+
+支持对结构化数据（如 DynamoDB、S3、Redshift）进行统一查询。
+
+- 先读取数据，拿到当前 version
+- 写入时用 ConditionExpression 限制 version 必须是读取时的值
+- 写入成功后，version 自增（比如 version + 1）
+## 🔧 事务的两种操作类型
+
+1. TransactWriteItems
+1. TransactGetItems
+
+
+Capacity Computations考试必考
+
+在 DynamoDB 中，理解容量（Capacity）计算非常重要，因为它直接影响你的性能、费用和系统设计。
+
+DynamoDB 有两种主要的容量模式（Capacity Modes）：
+
+## 🧭 1. On-Demand Mode（按需模式）
+
+- 无需计算 Read/Write Capacity Unit (RCU/WCU)，DynamoDB 根据你的流量自动扩容
+- 适合不稳定、不确定或突发流量场景
+- 按实际请求计费
+✅ 优点：
+
+- 无需管理容量
+- 支持突发高并发
+⚠️ 缺点：
+
+- 单价高于 Provisioned Mode
+- 高频高负载场景费用可能更贵
+## ⚙️ 2. Provisioned Mode（预配置模式）
+
+- 你需要 手动设置读写容量单位（RCU/WCU）
+- 费用更便宜，但超出预配容量会被 throttling（限流）
+## 🔢 读/写容量计算方法
+
+### 🔹 读容量单位 RCU（Read Capacity Unit）
+
+📌 举例：
+
+- 读取一个 12KB 的项（强一致） => ceil(12 / 4) = 3 RCU
+- 如果是 Eventually Consistent => 3 RCU × 0.5 = 1.5 RCU
+
+
+19.DynamoDB as session state cache
+
+将 DynamoDB 作为 Session 状态缓存（Session State Cache） 是完全可行的，而且在某些无服务器（Serverless）架构中，是一个不错的选择，尤其当你不想额外维护 Redis、ElastiCache 等缓存服务时。
+
+
+
+20.DynamoDB Write Sharding
+
+在 DynamoDB 中，Write Sharding（写入分片） 是一种解决写入热点问题的优化策略。当你对某个分区键（Partition Key）写入过于频繁时，就容易触发 throttling（限流），而 Write Sharding 可以将负载均匀分摊到多个分区上。
+
+## 🧠 为什么需要 Write Sharding？
+
+DynamoDB 的性能是基于 分区的物理限制，每个分区：
+
+- 最多每秒处理约 1000 WCU（写）
+- 最多每秒处理约 3000 RCU（读）
+- 单个分区键热度过高，会集中到一个分区，导致限流
+📌 如果你频繁向同一个 user_id = "john123" 写入数据，会出现写入瓶颈。
+
+suffix分压力
+
+
+
+21.DynamoDB Write Types
+
+## 📝 常见的 DynamoDB 写入类型
+
+22.Large Object Pattern
+
+在 DynamoDB 中，Large Object Pattern 是一种处理**大数据对象（Large Objects）**的方法 —— 解决 DynamoDB 单个 item 最大 400KB 限制 的问题。
+
+## 🧱 背景：为什么需要 Large Object Pattern？
+
+- DynamoDB 每条 item 最多只能存 400KB 数据（包括所有属性）。
+- 如果你需要存储：
+🔴 这些大对象超出 DynamoDB 限制，就必须通过别的方式处理。
+
+## ✅ Large Object Pattern 做法（核心思想）
+
+使用 S3 存数据内容，用 DynamoDB 存元数据（metadata）和 S3 的链接。
+
+
+
+indexing S3 Objects Metadata
+
+如何在 S3 对象元数据（Metadata） 上实现索引。
+
+这个过程的核心目的：
+
+> 让你可以“查找”S3 中的对象，按业务字段（如上传者、类型、标签等）进行过滤和搜索。
+
+因为：
+
+S3 本身 不支持按元数据搜索（你不能用 S3 去查“找出所有 uploader 是 user_123 的文件”）。
+
+## ✅ 正确的做法：使用 DynamoDB 索引 S3 对象元数据
+
+这是一种设计模式，叫 S3 Indexing with DynamoDB，常用于构建 “媒体库”、“文档平台”、“用户上传中心”等场景。
+
+
+
+23.DynamoDB  Operations
+
+Table CleanUp
+
+Copying a DynamoDB Table
+
+
+
+24.Security and Other Features
+
+## 
+
+- 执行一组最多 25 个写操作（Put、Update、Delete）
+- 所有操作要么全部成功，要么全部失败
+- 一次最多读取 25 个项，读取结果是强一致性（Strongly Consistent）
+- 大型文档（PDF、JSON）
+- 图片、视频
+- 日志、用户上传文件
+# 什么是 API Gateway？
+
+AWS API Gateway 是一个全托管的服务，它负责创建、发布、维护、监控和保护你的 API。它像一个“门卫”，帮你管理客户端请求到后端服务的流程。
+
+# API Gateway 的主要功能：
+
+# API Gateway 的工作流程举例
+
+客户端请求 → API Gateway → 认证检查 → 路由转发到 Lambda / EC2 / ECS → 处理结果返回 → API Gateway 返回响应给客户端
+
+# API Gateway 主要类型
+
+- REST API（传统风格，功能丰富）
+- HTTP API（更轻量，延迟更低，成本更低）
+- WebSocket API（支持双向通信）
+# 适合用 API Gateway 的场景
+
+- 统一管理微服务接口
+- 给 Lambda 函数提供 HTTPS 入口
+- 实现身份认证和授权
+- 请求参数校验和格式转换
+- 实现 API 版本管理和流量控制
+
+
+01.
 
