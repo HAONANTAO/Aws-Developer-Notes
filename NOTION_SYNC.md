@@ -2832,5 +2832,179 @@ AWS API Gateway 是一个全托管的服务，它负责创建、发布、维护�
 - 实现 API 版本管理和流量控制
 
 
-01.
+01.Intro
 
+02.
+
+Building a serverless API
+
+lambda+API
+
+Integration High Level→ HTTP,Lambda
+
+Endpoint Types:
+
+"Endpoint Types"（终端节点类型）定义了你的 API 是如何被访问的 —— 影响网络路径、延迟、成本、安全性等。
+
+## 🔗 三种 Endpoint Types（终端节点类型）
+
+03.hands on
+
+
+
+04.stages and deploy
+
+在 AWS API Gateway 中，Stage（阶段）和 Deploy（部署） 是 API 生命周期中非常重要的部分，用于管理不同环境（比如测试、开发、生产）的 API 版本。
+
+## 🌱 什么是 Stage？
+
+> Stage 就是你 API 的一个“发布环境”。
+
+类似于你在代码中有 dev, staging, prod 分支一样，在 API Gateway 中你也可以为每个环境部署一个独立的 Stage。
+
+每个 Stage 都有一个独立的 URL 地址，比如：
+
+```bash
+bash
+
+https://abc123.execute-api.ap-southeast-2.amazonaws.com/dev
+https://abc123.execute-api.ap-southeast-2.amazonaws.com/prod
+```
+
+## 🚀 什么是 Deploy（部署）？
+
+部署（Deploy） 就是把你设计好的 API 版本发布到某个 Stage 上，使其可以被调用。
+
+每次你在 API Gateway 中修改了路由、集成方式、请求参数等，都需要重新 Deploy 到某个 Stage 才能生效。
+
+## 🧱 一个简单例子：
+
+你定义了一个 /users 路由，绑定到了 Lambda 函数。
+
+你希望：
+
+- 在 dev 阶段用于测试（用测试 Lambda 函数）
+- 在 prod 阶段用于正式服务（用正式 Lambda 函数）
+你可以：
+
+1. 创建 API Gateway 路由结构
+1. 设置不同的 Lambda integration（用 Stage Variable 区分）
+1. 部署到 dev 和 prod
+1. 得到两个不同的调用地址
+## 🧨 什么是 Breaking Change？
+
+Breaking Change（破坏性变更） 是指：
+
+- 改变了原有 API 的行为/结构
+- 原来的客户端无法兼容新接口
+- 一旦部署，就会“破坏”正在使用旧版本的前端或其他服务
+### ✅ 常见的 Breaking Changes 有：
+
+stage variables
+
+
+
+05.hands on stage variables (In stage)
+
+
+
+06.see the option pf stages setting
+
+
+
+07.Canary Deployment
+
+## ✅ 概念解释
+
+Canary Deployment 是一种渐进式发布方式：
+
+> ✅ 把新版本只发布给 一部分流量，观察是否稳定，再逐渐增加流量占比，最终替换旧版本。
+
+名字来源于煤矿中放金丝雀预警有毒气体的做法 —— 先让“金丝雀”试水，如果没事再大规模发布。
+
+## ✅ 在 AWS Lambda 中的实现方式
+
+Lambda 支持 别名（alias）+ 加权路由（weighted routing），可以实现 canary 部署。
+
+### 🎯 举个例子：
+
+你有两个 Lambda 版本：
+
+- $LATEST（测试中）
+- version 1（稳定老版本）
+你给别名 prod 配置为：
+
+那外界调用 lambda:function-name:prod，其中 10% 流量会进入新版本 $LATEST，90% 仍然进入老版本 version 1。
+
+
+
+08.test canary 分发机制 考试必考！
+
+
+
+09.Integration types
+
+### 简单总结
+
+10.hands on mapping template
+
+
+
+11.AWS API Gateway swagger/Open api spec
+
+- OpenAPI 是一套格式和规则，用来用一种统一、结构化的方式描述你的API接口，包括：
+- 这种描述文件通常是JSON或YAML格式，机器可读且人也能看懂。
+- OpenAPI最早叫Swagger，后来成为开放标准，改名为OpenAPI。
+## AWS API Gateway 支持 Swagger/OpenAPI 概述
+
+- AWS API Gateway 可以导入和导出 OpenAPI（Swagger）定义文件，方便API设计和管理
+- OpenAPI 是描述 RESTful API 的标准格式（YAML 或 JSON）
+- API的路径（endpoint）
+- 支持的HTTP方法（GET、POST等）
+- 请求参数和请求体格式
+- 返回结果格式和状态码
+- 安全认证方式
+- 服务器信息等
+- 通过 OpenAPI 文件，你能：
+## 支持的 OpenAPI 版本
+
+- API Gateway 支持 OpenAPI 3.0 和 Swagger 2.0
+- 官方推荐使用 OpenAPI 3.0
+## 关键字段和示例
+
+OpenAPI 规范的结构包括：
+
+- openapi 或 swagger 版本号
+- info：API基本信息
+- paths：API路径和HTTP方法定义
+- components：定义安全方案、schemas等
+- x-amazon-apigateway-integration：API Gateway 特有的扩展，用于配置 Lambda 集成、HTTP代理等
+
+
+12.Caching API response
+
+### 什么是API响应缓存？
+
+缓存API响应，就是把API请求返回的数据临时存储起来，下次遇到相同请求时，直接用缓存数据返回，避免每次都调用后端或数据库，提升性能、减少延迟和降低服务器负载。
+
+### 为什么要缓存API响应？
+
+- 减少延迟：缓存数据可以快速响应，用户体验更好。
+- 减轻服务器压力：减少重复请求对后端系统的压力。
+- 节省资源：减少数据库或第三方服务调用，节省成本。
+### 缓存的基本类型
+
+- 客户端缓存（浏览器或客户端存储）
+- 边缘缓存（CDN缓存）
+- 服务端缓存（如Redis、Memcached）
+因为很贵，只在prod
+
+
+
+13.
+
+
+
+- 快速创建 API Gateway 的 API 和资源
+- 定义请求/响应格式、参数、鉴权方式等
+- 导出 API 规范文档，方便共享和版本管理
