@@ -1,4 +1,4 @@
-打卡
+›打卡
 
 # AWS study chapters
 
@@ -29,6 +29,10 @@
 # Chapter 22 - DynamoDB
 
 # Chapter 23 -API GateWay
+
+# Chapter 25 - CDK
+
+# Chapter 26 -Cognito
 
 AWS — cloud practitioner
 
@@ -3001,10 +3005,147 @@ OpenAPI 规范的结构包括：
 
 
 
-13.
+13.AWS API Gateway usage and API Keys
+
+
+
+14.Monitoring and Logging,tracing
+
+Account Limit Throtting
+
+errors
+
+
+
+15.API Gateways CORS
+
+跨域
+
+
+
+16.Security IAM Permissions
+
+Cognito User Pools
+
+Lambda Authorizer
+
+
+
+17.REST vs HTTP Api
+
+## 🧾 基本定义
+
+## 🔍 详细对比
+
+18. WebSocket API
+
+WebSocket API 是 AWS API Gateway 提供的一种专门用于建立实时双向通信的 API 类型，适用于需要客户端和服务器持续通信的场景。
+
+### 🌐 WebSocket API 是什么？
+
+WebSocket API 允许客户端（如浏览器或移动应用）与服务器之间建立一个长连接，这条连接可以：
+
+- 持续存在（不像 HTTP 请求响应一次就结束）
+- 双向通信（客户端和服务端都可以主动发消息）
+- 低延迟（适合实时性强的应用）
+
+
+19.handson
+
+
+
+20.Architecture
+
+single interface, API endpoints
+
+
 
 
 
 - 快速创建 API Gateway 的 API 和资源
 - 定义请求/响应格式、参数、鉴权方式等
 - 导出 API 规范文档，方便共享和版本管理
+CDK（Cloud Development Kit）是 AWS 提供的一套基础设施即代码（Infrastructure as Code, IaC） 工具，允许你使用熟悉的编程语言（如 TypeScript、Python、Java、C#）来定义和部署云资源。
+
+## 🌱 CDK 是什么？
+
+用代码写 CloudFormation！
+
+传统的 CloudFormation 是 YAML/JSON 的声明式写法，而 CDK 是编程式的写法。它会自动转换成 CloudFormation 模板并部署。
+
+## ✅ 优势
+
+
+
+01. AWS CDK
+
+用js写代码 写cloudformation
+
+## 🧱 一个简单示例（创建 Lambda + API Gateway）
+
+```typescript
+
+import * as cdk from 'aws-cdk-lib';
+import { Stack, StackProps } from 'aws-cdk-lib';
+import * as lambda from 'aws-cdk-lib/aws-lambda';
+import * as apigw from 'aws-cdk-lib/aws-apigateway';
+
+export class MyApiStack extends Stack {
+  constructor(scope: cdk.App, id: string, props?: StackProps) {
+    super(scope, id, props);
+
+    const myLambda = new lambda.Function(this, 'MyFunction', {
+      runtime: lambda.Runtime.NODEJS_18_X,
+      code: lambda.Code.fromAsset('lambda'), // 放 handler.js 的目录
+      handler: 'handler.main',
+    });
+
+    new apigw.LambdaRestApi(this, 'MyAPI', {
+      handler: myLambda,
+    });
+  }
+}
+
+```
+
+CDK（Cloud Development Kit）和 SAM（Serverless Application Model）都是 AWS 官方提供的 基础设施即代码（IaC）工具，用于部署和管理 AWS 资源，尤其是 Serverless 应用。下面是它们的区别和选择建议：
+
+## 🧱 本质区别
+
+02.handson
+
+Amazon Cognito 是 AWS 提供的一种用户身份验证、授权和用户管理服务。它主要用于在 Web 或移动应用中快速添加用户登录功能（如注册、登录、多因子认证、社交登录等），而无需自己从零构建完整的身份系统。
+
+### ✅ Cognito 的两个核心组件：
+
+1. User Pools（用户池）
+1. Identity Pools（身份池）
+### 🔐 Cognito 登录流程简图（用户池场景）：
+
+```plain text
+sql
+CopyEdit
+用户 → 注册/登录 → Cognito User Pool → 验证成功 → 返回 Token
+
+
+```
+
+### 🔧 Cognito 可以做什么？
+
+- 注册、登录、忘记密码、邮箱/短信验证
+- 多因子认证（MFA）
+- 使用社交账号（Google、Facebook）登录
+- 用户资料存储（如昵称、邮箱等）
+- 与 Lambda 集成实现登录前后自定义逻辑（触发器）
+
+
+01.
+
+- 用于管理用户注册和登录。
+- 支持邮箱/手机号/用户名密码登录。
+- 支持社交登录（Google、Facebook、Apple 等）。
+- 提供JWT token（ID Token、Access Token、Refresh Token）。
+- 可与 API Gateway、Lambda、App 等集成进行认证授权。
+- 用于授权用户访问 AWS 资源（比如 S3、DynamoDB）。
+- 支持匿名用户、用户池用户、社交用户联合身份。
+- 与 IAM 角色绑定，实现精细访问控制。
