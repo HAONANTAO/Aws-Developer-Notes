@@ -1,4 +1,4 @@
-›打卡
+打卡
 
 # AWS study chapters
 
@@ -34,6 +34,103 @@
 
 # Chapter 26 -Cognito
 
+
+
+# Overview
+
+## IAM：
+
+IAM（Identity and Access Management）最精简总结：
+
+IAM 是 AWS 的权限管理服务，负责：
+
+- 创建和管理用户、组、角色
+- 控制谁能访问哪些 AWS 资源，以及能执行什么操作
+- 通过策略（Policy）定义详细权限，支持细粒度访问控制
+- 支持多种身份验证方式和临时凭证（如 STS）
+简单说：
+
+> IAM 让你安全地管“谁可以做什么”。
+
+
+
+## EC2：
+
+EC2 是 AWS 提供的弹性云服务器服务，负责：
+
+- 按需提供可扩展的虚拟服务器（实例）
+- 支持多种操作系统（Linux、Windows 等）和实例类型（CPU、内存配置等）
+- 用户可以自由配置网络、安全组、存储和弹性 IP
+- 可用于运行应用程序、网站、后台服务等
+简单说：
+
+> EC2 是 AWS 的“云端虚拟电脑”，你可以远程开关、配置，随用随付。
+
+
+
+## Router 53
+
+Route 53 是 AWS 的高度可用且可扩展的域名解析服务（DNS），负责：
+
+- 将域名（如 example.com）解析到 IP 地址或 AWS 资源（如 ELB、CloudFront）
+- 支持注册域名和管理 DNS 记录
+- 提供健康检查和故障转移功能，保障网站高可用
+- 支持路由策略（简单路由、加权路由、延迟路由等）优化流量分发
+简单说：
+
+> Route 53 是 AWS 的“互联网电话簿”，帮你的域名找到正确的服务器地址。
+
+
+
+## Amazon S3
+
+Amazon S3 是 AWS 提供的对象存储服务，负责：
+
+- 存储和检索任意数量的数据文件（对象），如图片、视频、备份等
+- 数据持久、安全、高可用，支持跨区域复制
+- 支持多种存储类型（标准、归档、智能分层）满足不同需求和成本
+- 通过权限策略控制访问，支持版本控制和生命周期管理
+简单说：
+
+> S3 是 AWS 的“云端文件柜”，你可以随时上传、下载、管理文件。
+
+
+
+## CloudFront
+
+CloudFront 是 AWS 的全球内容分发网络（CDN），负责：
+
+- 将静态和动态内容（如网页、视频、API）缓存到全球边缘节点
+- 加速内容传输，降低延迟，提升用户访问速度
+- 支持安全功能，如 HTTPS、访问控制和地理限制
+- 与 S3、ELB、Lambda@Edge 等 AWS 服务无缝集成
+简单说：
+
+> CloudFront 是 AWS 的“内容快递员”，帮你把内容快速送到全球用户手中。
+
+
+
+## CloudFormation
+
+CloudFormation 是 AWS 的基础设施即代码（IaC）服务，负责：
+
+- 用模板（YAML/JSON）定义和自动化部署 AWS 资源
+- 统一管理资源生命周期，支持创建、更新、删除资源堆栈
+- 帮助实现基础设施版本控制和重复部署
+- 减少人为操作错误，提高部署一致性和效率
+简单说：
+
+> CloudFormation 是 AWS 的“自动化建筑师”，帮你用代码快速搭建和管理云端资源。
+
+
+
+## CloudWatch
+
+CloudWatch 是 AWS 的监控和运维服务，负责：
+
+- 收集和跟踪 AWS 资源和应用程序的指标（CPU、内存、请求数等）
+- 记录日志，支持日志搜索和分析
+- 设置报警和自动响应（如自动扩容、通知）
 AWS — cloud practitioner
 
 介绍注册和up主
@@ -3122,12 +3219,9 @@ Amazon Cognito 是 AWS 提供的一种用户身份验证、授权和用户管理
 1. Identity Pools（身份池）
 ### 🔐 Cognito 登录流程简图（用户池场景）：
 
-```plain text
-sql
-CopyEdit
+```sql
+
 用户 → 注册/登录 → Cognito User Pool → 验证成功 → 返回 Token
-
-
 ```
 
 ### 🔧 Cognito 可以做什么？
@@ -3139,8 +3233,93 @@ CopyEdit
 - 与 Lambda 集成实现登录前后自定义逻辑（触发器）
 
 
-01.
+01.Overview
 
+give user identity
+
+Cognito User Pools,
+
+Cognito Identity Pools
+
+Cognito Sync
+
+- “人类用户” vs “程序/云服务”
+- 应用用户管理 vs AWS 资源访问控制
+## 🔍 Cognito vs IAM 对比一览表
+
+## 🧠 通俗理解：
+
+- Cognito 是给你的“APP 用户”用的，管理他们怎么登录、登录后能访问什么资源。
+- IAM 是给“开发人员、管理员、服务”用的，控制它们能对 AWS 做哪些操作。
+
+
+02.
+
+CUP → Create a serverless database of user for web applications
+
+## 🧠 什么是 CUP（Cognito User Pool）？
+
+CUP（Cognito User Pool）是 Amazon Cognito 的一部分，是一个用户目录服务，用于管理你应用的注册用户。它可以让你轻松实现：
+
+- 用户注册
+- 用户登录（邮箱/手机号/用户名 + 密码）
+- 多因子认证（MFA）
+- 社交登录（Google、Facebook、Apple 等）
+- 用户属性管理（如昵称、邮箱、出生日期等）
+- JWT Token 颁发（用于后续访问 API）
+## 🔑 CUP 提供什么？
+
+- ✅ 内置登录/注册/验证流程
+- ✅ 提供 Hosted UI（免开发登录界面）
+- ✅ 支持自定义属性（如用户角色、兴趣等）
+- ✅ 登录成功后返回 ID token / Access token / Refresh token（符合 OpenID Connect）
+03.hands on
+
+
+
+04.Lambda Triggers
+
+
+
+05.Federated identities
+
+在 AWS Cognito 中，Federated Identities（联合身份） 是用来让不同身份来源的用户（如 Google、Facebook、Apple、企业身份系统，甚至 Cognito User Pool 登录用户）能够**访问 AWS 资源（如 S3、DynamoDB）**的一种机制。
+
+它的核心是通过 Cognito Identity Pool（身份池） 来为这些用户分配临时的 IAM 身份凭证（STS 令牌）。
+
+## 🔗 Federated Identities = Cognito Identity Pool
+
+- Cognito User Pool 解决的是：用户身份验证
+- Identity Pool（Federated Identities）解决的是：用户访问 AWS 资源的授权
+## 🧠 简单理解：
+
+policy variables
+
+IAM roles 精细化
+
+
+
+06.hands on
+
+
+
+07.CUP  vs IP
+
+## 🧠 简洁对比：CUP vs CIP
+
+08.Cognito Sync
+
+Cognito Sync 是 Amazon Cognito 的一个早期功能模块，用于在设备之间同步用户数据（如设置、偏好等）。但它现在已经被弃用，AWS 建议使用 AppSync + DynamoDB 或使用 AWS Amplify DataStore 替代。
+
+## ✅ Cognito Sync 是什么？
+
+> Cognito Sync = 跨设备同步用户本地数据（如设置、草稿、偏好）的服务。
+
+它让你可以将数据（以 key-value 存储形式）：
+
+- 存储在云端
+- 在多个设备之间自动同步
+- 和 Cognito Identity Pool 结合，自动识别每个用户的数据空间
 - 用于管理用户注册和登录。
 - 支持邮箱/手机号/用户名密码登录。
 - 支持社交登录（Google、Facebook、Apple 等）。
@@ -3149,3 +3328,114 @@ CopyEdit
 - 用于授权用户访问 AWS 资源（比如 S3、DynamoDB）。
 - 支持匿名用户、用户池用户、社交用户联合身份。
 - 与 IAM 角色绑定，实现精细访问控制。
+- 帮助用户实时监控系统健康状态和性能
+简单说：
+
+> CloudWatch 是 AWS 的“健康监测仪”，帮你实时掌握云资源的运行状况。
+
+
+
+## Lambda
+
+Lambda 是 AWS 的无服务器计算服务，负责：
+
+- 运行代码，无需管理服务器，按调用次数计费
+- 自动扩展，根据请求量自动调整执行环境
+- 支持多种语言（Node.js、Python、Java、Go 等）
+- 集成多种 AWS 服务触发器（API Gateway、S3、DynamoDB 等）
+简单说：
+
+> Lambda 是 AWS 的“按需计算工厂”，帮你写好代码后自动执行，无需自己搭服务器。
+
+
+
+## DynamoDB
+
+DynamoDB 是 AWS 的全托管 NoSQL 数据库服务，负责：
+
+- 存储海量数据，支持快速、低延迟访问
+- 自动扩展读写能力，按需调整性能
+- 支持键值和文档数据模型
+- 提供内置安全、备份、恢复和全局表功能
+简单说：
+
+> DynamoDB 是 AWS 的“高速云端数据库”，适合高并发、灵活的数据存储需求。
+
+
+
+## API GateWay
+
+API Gateway 是 AWS 的托管服务网关，负责：
+
+- 创建、发布、维护和保护 RESTful 和 WebSocket API
+- 处理所有 API 请求的流量管理、身份验证和访问控制
+- 支持请求和响应的转换与缓存
+- 无缝集成 Lambda、后端服务及其他 AWS 资源
+简单说：
+
+> API Gateway 是 AWS 的“API门卫”，帮你安全、高效地管理和暴露后端服务接口。
+
+
+
+## Cognito
+
+Cognito 是 AWS 的用户身份管理和认证服务，负责：
+
+- 用户注册、登录、多因素认证（MFA）和用户池管理
+- 支持社交登录（Google、Facebook 等）和企业身份联合（SAML、OIDC）
+- 通过身份池（Identity Pool）颁发临时 AWS 凭证，实现访问 AWS 资源
+- 安全管理用户会话，支持自定义属性和 Lambda 触发器扩展
+简单说：
+
+> Cognito 是 AWS 的“身份管家”，帮你轻松实现用户认证和授权。
+
+
+
+# AWS 全栈部署典型顺序和服务关系
+
+### 1. 用户身份管理 & 认证
+
+- 服务：Cognito User Pool + Identity Pool
+- 职责：用户注册、登录、认证，发放访问 AWS 资源的临时凭证
+### 2. 前端应用托管
+
+- 服务：S3 + CloudFront
+- 职责：托管静态网站（React、Vue、Angular等），用 CloudFront 加速全球访问
+### 3. API 接口层
+
+- 服务：API Gateway
+- 职责：管理前端请求，做身份校验、流量管理、请求转发到后端
+### 4. 无服务器计算处理业务逻辑
+
+- 服务：Lambda
+- 职责：执行业务逻辑，响应 API Gateway 请求，无需管理服务器
+### 5. 数据库存储
+
+- 服务：DynamoDB（或 RDS）
+- 职责：存储应用数据，支持高性能读写
+### 6. 监控与告警
+
+- 服务：CloudWatch
+- 职责：监控 Lambda、API Gateway、数据库等服务的运行状态，设置告警
+### 7. 基础设施自动化管理（可选）
+
+- 服务：CloudFormation / CDK / SAM
+- 职责：用代码管理和部署上述所有资源，保证环境一致性
+# 总流程示意
+
+用户浏览器 → CloudFront → S3（前端静态文件）
+
+↓
+
+API Gateway → Lambda → DynamoDB
+
+↑
+
+Cognito（身份验证 & 权限控制）
+
+↓
+
+CloudWatch（监控）
+
+Lambda 是无服务器时代的“后端函数”，帮你轻松构建弹性、按需的后端逻辑。
+
